@@ -8,91 +8,6 @@ from itertools import repeat
 import collections.abc as container_abcs
 from typing import Tuple, Union
 from collections import OrderedDict
-
-class ChannelAttention(nn.Module):
-    def __init__(self, in_planes, ratio=16):
-        super(ChannelAttention, self).__init__()
-        self.avg_pool = nn.AdaptiveAvgPool1d(1)
-        self.max_pool = nn.AdaptiveMaxPool1d(1)
-           
-        self.fc = nn.Sequential(nn.Conv2d(in_planes, in_planes // 16, 1, bias=False),
-                               nn.ReLU(),
-                               nn.Conv2d(in_planes // 16, in_planes, 1, bias=False))
-        self.sigmoid = nn.Sigmoid()
-    #torch.Size([64, 256, 72, 36])
-    #torch[64,254,768]
-    def forward(self, x):
-        #torch.Size([64, 256, 1, 1])
-        avg_out = self.fc(self.avg_pool(x).unsqueeze(3))
-        #torch.Size([64, 256, 1, 1])
-        max_out = self.fc(self.max_pool(x).unsqueeze(3))
-        out = avg_out + max_out
-        #torch.Size([64, 256, 1, 1])
-        return self.sigmoid(out.squeeze(3))
-
-class SpatialAttention(nn.Module):
-    def __init__(self, kernel_size=7):
-        super(SpatialAttention, self).__init__()
-
-        self.conv1 = nn.Conv2d(2, 1, kernel_size, padding=kernel_size//2, bias=False)
-        self.sigmoid = nn.Sigmoid()
-    #torch.Size([64, 256, 72, 36])
-    def forward(self, x):
-        #torch.Size([64, 1, 72, 36])
-        avg_out = torch.mean(x, dim=1, keepdim=True)
-        #torch.Size([64, 1, 72, 36])
-        max_out, _ = torch.max(x, dim=1, keepdim=True)
-        #torch.Size([64, 2, 72, 36])
-        x = torch.cat([avg_out, max_out], dim=1)
-        
-        x = self.conv1(x.unsqueeze(3)).squeeze(3)
-        
-        return self.sigmoid(x)
-
-
-class QuickGLUE(nn.Module):
-    """
-    Applies GELU approximation that is fast but somewhat inaccurate. See: https://github.com/hendrycks/GELUs
-    """
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x * torch.sigmoid(1.702 * x)
-   
-
-class HXCMM(nn.Module):
-    def __init__(self, edim=768):
-        super(HXCMM, self).__init__()
-        self.norm1 = nn.LayerNorm(768)
-        self.norm2 = nn.LayerNorm(768)
-        self.norm3 = nn.LayerNorm(768)
-        self.mlp = nn.Sequential(OrderedDict([
-            ("c_fc", nn.Linear(edim, edim * 4)),
-            ("gelu", QuickGLUE()),
-            ("c_proj", nn.Linear(edim * 4, edim))
-        ]))
-        self.attn = nn.MultiheadAttention(embed_dim=768,num_heads=12,batch_first = True)
-        #torch.Size([64, 256, 72, 36])
-    def forward(self, x, x_ori):
-
-        x = x + self.attn(self.norm1(x_ori),self.norm1(x_ori),self.norm2(x),need_weights=False)[0]
-        x = x + self.mlp(self.norm3(x))
-        
-        return x
-
-class HXCM(nn.Module):
-    def __init__(self, edim=768):
-        super(HXCM, self).__init__()
-        self.norm1 = nn.LayerNorm(768)
-        self.norm2 = nn.LayerNorm(768)
-
-
-        self.attn = nn.MultiheadAttention(embed_dim=768,num_heads=768//4,batch_first = True)
-        #torch.Size([64, 256, 72, 36])
-    def forward(self, x, x_ori):
-
-        x = x + self.attn(x_ori,x_ori,x,need_weights=False)[0]
-
-        return x
     
 def _ntuple(n):
     def parse(x):
@@ -272,10 +187,10 @@ class PatchEmbed_overlap(nn.Module):
         return x
 
 
-class DLK(nn.Module):
+class PCRT(nn.Module):
     """ Image to Patch Embedding with overlapping patches"""
     def __init__(self, img_size=224, patch_size=16, stride_size=20, in_chans=3, embed_dim=768):
-        super(DLK, self).__init__()
+        super(PCRT, self).__init__()
         img_size = to_2tuple(img_size)
         patch_size = to_2tuple(patch_size)
         stride_size_tuple = to_2tuple(stride_size)
@@ -335,7 +250,7 @@ class ViT(nn.Module):
             for i in range(depth)])
 
         self.norm = norm_layer(embed_dim)
-        self.DLK =DLK(img_size=img_size, patch_size=patch_size, stride_size=stride_size, in_chans=in_chans,embed_dim=embed_dim)
+        self.PCR_test =PCRT(img_size=img_size, patch_size=patch_size, stride_size=stride_size, in_chans=in_chans,embed_dim=embed_dim)
 
         trunc_normal_(self.cls_token, std=.02)
         trunc_normal_(self.pos_embed, std=.02)
@@ -354,13 +269,7 @@ class ViT(nn.Module):
 
     def forward_features(self, x):
         B = x.shape[0]
-        #torch.Size([16, 3, 288, 144])
-        # x = self.patch_embed(x)
-        # x = x.flatten(2).transpose(1, 2)
-        #torch.Size([16, 253, 768])
-        #x = self.DLK(x)+x
-        #x = x.flatten(2).transpose(1, 2)
-        #index1 = torch.LongTensor(random.sample(range(50), 50))
+
         index1 = torch.LongTensor(random.sample(range(80), 80))
         index1, _ = torch.sort(index1)
         index1 = index1.cuda().detach()
@@ -396,12 +305,6 @@ class ViT(nn.Module):
 
         x = self.pos_drop(x)
 
-        # for blk in self.blocks:
-        #     x =   blk(x)
-        #     x_1 = blk(x_1)
-        #     x_2 = blk(x_2)
-        #     x_3 = blk(x_3)
-        #xtemp0_0=x
         x_ori0=x
         x_ori01=x_1
         x_ori02=x_2
@@ -507,7 +410,7 @@ class ViT(nn.Module):
         x_3 = self.blocks[9](x_3,x_ori83)
 
    
-        xtemp1=x  
+        xtemps=x  
         x =   self.blocks[10](x  ,x  )
         x_1 = self.blocks[10](x_1,x_1)
         x_2 = self.blocks[10](x_2,x_2)
@@ -518,8 +421,8 @@ class ViT(nn.Module):
         x_1 = self.blocks[11](x_1,x_1)
         x_2 = self.blocks[11](x_2,x_2)
         x_3 = self.blocks[11](x_3,x_3)
-        #xtemp=x_1[:, 0]
-        return x[:, 0],x_1[:, 0],x_2[:, 0],x_3[:, 0],xtemp1[:, 0]
+        
+        return x[:, 0],x_1[:, 0],x_2[:, 0],x_3[:, 0],xtemps[:, 0]
 
     def forward(self,x):
         x = self.forward_features(x)

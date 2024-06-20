@@ -11,7 +11,7 @@ from data_loader import SYSUData, RegDBData,LLCMData, TestData
 from data_manager import *
 from eval_metrics import eval_sysu, eval_regdb, eval_llcm
 from utils import *
-from loss import CenterPNLoss,OriTripletLoss, TripletLoss_WRT,CenterTripletLoss,DCL,MSEL,HXCS_contrastLoss_ori,HXCD_contrastLoss,CenterLoss
+from loss import CenterAggregationLoss,OriTripletLoss, TripletLoss_WRT,CenterTripletLoss,DCL,MSEL,CenterLoss
 from tensorboardX import SummaryWriter
 import datetime
 import torch.nn.functional as F
@@ -21,25 +21,22 @@ from optimizer import make_optimizer
 from scheduler import create_scheduler
 import build_transforms
 
-
+from resnet.model_resnet import net_resnet
 from model.make_model import build_vision_transformer
 from config.config import cfg
-HXC_TIME = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
 
 parser = argparse.ArgumentParser(description='PyTorch Cross-Modality Training')
 parser.add_argument('--dataset', default='sysu',help='dataset name: regdb or sysu or llcm]')
-parser.add_argument('--arch', default='resnet50', type=str,help='network baseline:resnet18 or resnet50')
 parser.add_argument('--resume', '-r', default='', type=str, help='resume from checkpoint')
 parser.add_argument('--test-only', action='store_true', help='test only')
 parser.add_argument('--save_epoch', default=20, type=int,metavar='s', help='save model every 10 epochs')
-parser.add_argument('--optim', default='SGD', type=str, help='SGD,ADM')
-parser.add_argument('--model_path', default='result/MSCMNet'+HXC_TIME+'/save_model/', type=str, help='model save path')
-parser.add_argument('--log_path', default='result/MSCMNet'+HXC_TIME+'/log/', type=str, help='log save path')
-parser.add_argument('--vis_log_path', default='result/MSCMNet'+HXC_TIME+'/log/vis_log/', type=str, help='log save path')
-parser.add_argument('--loss_tri', default='QCT', type=str, help='')
-parser.add_argument('--lr_scheduler', default='step',type=str, help='step or consine')
-parser.add_argument('--backbone', default='AGW',type=str, help='AGW')
-parser.add_argument('--lr', default=0.1, type=float,help='learning rate, 0.00035/0.0001 for adam,sgd 0.1')
+parser.add_argument('--optim', default='admw', type=str, help='SGD,ADMW')
+parser.add_argument('--model_path', default='result/LAReViT/save_model/', type=str, help='model save path')
+parser.add_argument('--log_path', default='result/LAReViT/log/', type=str, help='log save path')
+parser.add_argument('--vis_log_path', default='result/LAReViT/log/vis_log/', type=str, help='log save path')
+parser.add_argument('--loss', default='CAL', type=str, help='')
+parser.add_argument('--backbone', default='transformer',type=str, help='transformer')
 parser.add_argument('--workers', default=4, type=int, metavar='N',help='number of data loading workers (default: 4)')
 parser.add_argument('--img_w', default=144, type=int,metavar='imgw', help='img width')
 parser.add_argument('--img_h', default=288, type=int,metavar='imgh', help='img height')
@@ -53,7 +50,7 @@ parser.add_argument('--gpu', default='0', type=int,help='gpu device ids for CUDA
 parser.add_argument('--mode', default='all', type=str, help='all or indoor')
 parser.add_argument('--method', default='LAReViT', type=str,
                     metavar='m', help='method type: base or LAReViT')
-parser.add_argument('--config_file', default='/home/gml/HXC/HXCNetGBESTLOSSCNN10*10cam1best/config/SYSU.yml',
+parser.add_argument('--config_file', default='/home/gml/HXC/LAReViT-main/config/SYSU.yml',
                     help='path to config file', type=str)
 parser.add_argument("opts", help="Modify config options using the command-line",
                     default=None,nargs=argparse.REMAINDER)
@@ -92,9 +89,9 @@ if not os.path.isdir(args.vis_log_path):
     os.makedirs(args.vis_log_path)
 
 suffix = dataset
-suffix = suffix + '_HXC_p{}_n{}_lr_{}_seed_{}'.format(args.num_pos, args.batch_size, args.lr, args.seed)
+suffix = suffix + '_LAReViT_p{}_n{}_lr_{}_seed_{}'.format(args.num_pos, args.batch_size, cfg.BASE_LR, args.seed)
 
-if not args.optim == 'sgd':
+if not args.optim == 'admw':
     suffix = suffix + '_' + args.optim
 
 if dataset == 'regdb':
@@ -192,7 +189,8 @@ print('==> Building model..')
 net_vit = build_vision_transformer(num_classes=n_class,cfg = cfg)
 net_vit.to(device)
 
-
+net_res = net_resnet(n_class, no_local='on', gm_pool='on', arch='resnet50')
+net_res.to(device)
 
 if len(args.resume) > 0:
     model_path = checkpoint_path + args.resume
@@ -212,20 +210,18 @@ if args.method == 'LAReViT':
     loader_batch = args.batch_size * args.num_pos
     #criterion_tri= CenterTripletLoss(k_size=loader_batch, margin=args.margin)
     criterion_tri = OriTripletLoss(batch_size=loader_batch, margin=args.margin)
-    criterion_DCL = DCL()
-    criterion_MSEL = MSEL()
-    criterion_CT = CenterLoss(k_size=1, margin=0.1)
-    #criterion_cs= HXCS_contrastLoss(32,0.1)
-    criterion_cs= HXCS_contrastLoss_ori(32,0.1)
-    criterion_HXC=CenterPNLoss()
+    # criterion_DCL = DCL()
+    # criterion_MSEL = MSEL()
+    #criterion_CT = CenterLoss(k_size=1, margin=0.1)
+
+    criterion_CAL=CenterAggregationLoss()
 else:
     loader_batch = args.batch_size * args.num_pos
     criterion_tri= OriTripletLoss(batch_size=loader_batch, margin=args.margin)
 
 criterion_id.to(device)
+criterion_CAL.to(device)
 criterion_tri.to(device)
-criterion_DCL.to(device)
-criterion_MSEL.to(device)
 
 ##############################################
 
@@ -260,8 +256,6 @@ def train(epoch):
             input20 = Variable(input20.cuda())
             input21 = Variable(input21.cuda())
             
-            # label1 = torch.cat([label1,label1])
-            # label2 = torch.cat([label2,label2])
 
             labels = Variable(labels.cuda())
             label1 = Variable(label1.cuda())
@@ -270,41 +264,32 @@ def train(epoch):
             
             scores, cls_score1, cls_score2, cls_score3, \
             feats, feat_x1, feat_x2, feat_x3 ,clstemp,feattemp = net_vit(torch.cat([input10,input20]))
-            # feat=layerwise_cls_tokens[-1]
-            # featp=layerwise_part_tokens[-1]
-            # featp1=featp[0]
-            # featp2=featp[1]
-            # featp3=featp[2]
-            
+
 
             loss_id = criterion_id(scores,labels)
-            loss_id1 = criterion_id(cls_score1,labels)
-            loss_id2 = criterion_id(cls_score2,labels)
-            loss_id3 = criterion_id(cls_score3,labels)
+            loss_idL1 = criterion_id(cls_score1,labels)
+            loss_idL2 = criterion_id(cls_score2,labels)
+            loss_idL3 = criterion_id(cls_score3,labels)
 
             loss_tri   = criterion_tri(feats, labels)
-            loss_trip1 = criterion_tri(feat_x1, labels)
-            loss_trip2 = criterion_tri(feat_x2, labels)
-            loss_trip3 = criterion_tri(feat_x3, labels)
+            loss_triL1 = criterion_tri(feat_x1, labels)
+            loss_triL2 = criterion_tri(feat_x2, labels)
+            loss_triL3 = criterion_tri(feat_x3, labels)
             
             
-            loss_H1 = criterion_HXC(feats, labels)
-            loss_H2 = criterion_HXC(feat_x1, labels)
-            loss_H3 = criterion_HXC(feat_x2, labels)
-            loss_H4 = criterion_HXC(feat_x3, labels)
+            loss_CAL = criterion_CAL(feats, labels)
             
             
-            loss_idt = criterion_id(clstemp,labels)
-            loss_trit   = criterion_tri(feattemp, labels)          
-            loss_Ht = criterion_HXC(feattemp, labels)
+            loss_ids = criterion_id(clstemp,labels)
+            loss_tris   = criterion_tri(feattemp, labels)          
+            loss_CALs = criterion_CAL(feattemp, labels)
 
 
             
-            loss = (loss_tri+loss_trip1+loss_trip2+loss_trip3\
-                +loss_id+loss_id1+loss_id2+loss_id3)/4\
-                    +loss_H1\
-                        +(loss_idt+loss_trit+loss_Ht)*0.5\
-                        #+(loss_idta+loss_trita+loss_Hta)*0.5
+            loss = (loss_tri+loss_triL1+loss_triL2+loss_triL3\
+                +loss_id+loss_idL1+loss_idL2+loss_idL3)/4\
+                    +loss_CAL\
+                        +(loss_ids+loss_tris+loss_CALs)*0.5
             
 
              
@@ -358,14 +343,11 @@ def test(epoch):
         for batch_idx, (input, label) in enumerate(gall_loader):
             batch_num = input.size(0)
             input = Variable(input.cuda())
-            #featA, feat_attA = net_vit(input, input, input, input,test_mode[0])
+            
             featA,featA1 = net_vit(input)
 
             gall_feat[ptr:ptr + batch_num, :] = featA.detach().cpu().numpy()
             gall_feat_att[ptr:ptr + batch_num, :] = featA1.detach().cpu().numpy()
-            # gall_feat[ptr:ptr + batch_num, :] = featA.detach().cpu().numpy()
-            # gall_feat_att[ptr:ptr + batch_num,
-            #               :] = feat_attA.detach().cpu().numpy()
 
             ptr = ptr + batch_num
     print('Extracting Time:\t {:.3f}'.format(time.time() - start))
@@ -382,7 +364,7 @@ def test(epoch):
             batch_num = input.size(0)
             input = Variable(input.cuda())
             featA,featA1 = net_vit(input)
-            #featA, feat_attA = net_vit(input, input, input, input,test_mode[1])
+
             query_feat[ptr:ptr + batch_num, :] = featA.detach().cpu().numpy()
             query_feat_att[ptr:ptr + batch_num,
                            :] = featA1.detach().cpu().numpy()           
@@ -390,9 +372,7 @@ def test(epoch):
     print('Extracting Time:\t {:.3f}'.format(time.time() - start))
 
     start = time.time()
-    # compute the similarity
-    # distmat = np.matmul(query_feat, np.transpose(gall_feat))
-    # distmat_att = np.matmul(query_feat_att, np.transpose(gall_feat_att))
+
     distmat_att = np.matmul(query_feat, np.transpose(gall_feat))
     distmat = np.matmul(query_feat_att, np.transpose(gall_feat_att))
     # evaluation

@@ -6,9 +6,9 @@ import torch.nn as nn
 
 
 
-class ChannelAttentionModule(nn.Module):
+class PositionalChannelReconstructionModule(nn.Module):
     def __init__(self, in_channels, reduction_ratio=4):
-        super(ChannelAttentionModule, self).__init__()
+        super(PositionalChannelReconstructionModule, self).__init__()
         self.avg_poolA = nn.AdaptiveAvgPool1d(1)
         self.avg_poolM = nn.AdaptiveMaxPool1d(1)
         self.fc = nn.Sequential(
@@ -77,7 +77,7 @@ class build_vision_transformer(nn.Module):
                         attn_drop_rate=cfg.ATT_DROP_RATE)
 
         self.baseA.load_param(cfg.PRETRAIN_PATH)
-        print('Loading pretrained ImageNet model......from {}'.format(cfg.PRETRAIN_PATH))
+        #print('Loading pretrained ImageNet model......from {}'.format(cfg.PRETRAIN_PATH))
 
         self.num_classes = num_classes
 
@@ -121,31 +121,27 @@ class build_vision_transformer(nn.Module):
         
         self.l2norm = Normalize(2)
 
-        self.dlk = ChannelAttentionModule(364)
+        self.PCR = PositionalChannelReconstructionModule(364)
     def forward(self, x):
         
         x = self.base.patch_embed(x)
         
-        #x_w = self.dag(x)
-        #x_w = F.normalize(x_w)+1
-        #x=x_w*x
-        
         x = x.flatten(2).transpose(1, 2)
-        x = self.dlk(x) + x
+        x = self.PCR(x) + x
         
-        x,x_1,x_2,x_3,temp1 = self.base(x)
+        x,x_1,x_2,x_3,x_s = self.base(x)
         x   = self.layer_norm1(x  )
         x_1 = self.layer_norm1(x_1)
         x_2 = self.layer_norm1(x_2)
         x_3 = self.layer_norm1(x_3)
-        temp1 = self.layer_norm2(temp1)
+        x_s = self.layer_norm2(x_s)
 
         
         feat =    self.bottleneck1(x  )
         feat_x1 = self.bottleneck1(x_1)
         feat_x2 = self.bottleneck1(x_2)
         feat_x3 = self.bottleneck1(x_3)
-        feat_temp1 = self.bottleneck2(temp1)
+        feat_x_s = self.bottleneck2(x_s)
 
         if self.training:
 
@@ -153,14 +149,14 @@ class build_vision_transformer(nn.Module):
             cls_score1 = self.classifier1(feat_x1)
             cls_score2 = self.classifier1(feat_x2)
             cls_score3 = self.classifier1(feat_x3)
-            cls_score_temp1 = self.classifier2(feat_temp1)
+            cls_score_s = self.classifier2(feat_x_s)
    
             return cls_score, cls_score1,cls_score2,cls_score3, \
-                   x,x_1,x_2,x_3,cls_score_temp1,temp1
+                   x,x_1,x_2,x_3,cls_score_s,x_s
 
 
         else:
-            return self.l2norm(feat),self.l2norm(temp1)#,self.l2norm(feat_x1),self.l2norm(feat_x2),self.l2norm(feat_x3)
+            return self.l2norm(feat),self.l2norm(x_s)#,self.l2norm(feat_x1),self.l2norm(feat_x2),self.l2norm(feat_x3)
 
 
     def load_param(self, trained_path):
