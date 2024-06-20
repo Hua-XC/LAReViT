@@ -17,22 +17,16 @@ from model.make_model import build_vision_transformer
 parser = argparse.ArgumentParser(description='PyTorch Cross-Modality Training')
 parser.add_argument('--dataset', default='sysu', help='dataset name: regdb or sysu]')
 parser.add_argument('--lr', default=0.1 , type=float, help='learning rate, 0.00035 for adam')
-parser.add_argument('--optim', default='sgd', type=str, help='optimizer')
-parser.add_argument('--arch', default='resnet50', type=str,
-                    help='network baseline: resnet50')
-parser.add_argument('--resume', '-r', default='sysu_HXC_p4_n6_lr_0.1_seed_0_SGD_best.t', type=str,
+parser.add_argument('--resume', '-r', default='sysu_LAReViT_p4_n6_lr_0.1_seed_0_ADMW_best.t', type=str,
                     help='resume from checkpoint')
-# parser.add_argument('--resume', '-r', default='', type=str,
-#                     help='resume from checkpoint')
-xxxx='MSCMNet2024-04-19 12:41:51cam=1===='
 parser.add_argument('--test-only', action='store_true', help='test only')
-parser.add_argument('--model_path', default='result/'+xxxx+'/save_model/', type=str,
+parser.add_argument('--model_path', default='result/LAReViT/save_model/', type=str,
                     help='model save path')
 parser.add_argument('--save_epoch', default=20, type=int,
                     metavar='s', help='save model every 10 epochs')
-parser.add_argument('--log_path', default='result/'+xxxx+'/log/', type=str,
+parser.add_argument('--log_path', default='result/LAReViT/log/', type=str,
                     help='log save path')
-parser.add_argument('--vis_log_path', default='result/'+xxxx+'/log/vis_log/', type=str,
+parser.add_argument('--vis_log_path', default='result/LAReViT/log/vis_log/', type=str,
                     help='log save path')
 parser.add_argument('--workers', default=4, type=int, metavar='N',
                     help='number of data loading workers (default: 4)')
@@ -44,10 +38,8 @@ parser.add_argument('--batch-size', default=6, type=int,
                     metavar='B', help='training batch size')
 parser.add_argument('--test-batch', default=32, type=int,
                     metavar='tb', help='testing batch size')
-parser.add_argument('--method', default='awg', type=str,
+parser.add_argument('--method', default='LAReViT', type=str,
                     metavar='m', help='method type: base or awg')
-parser.add_argument('--margin', default=0.3, type=float,
-                    metavar='margin', help='triplet loss margin')
 parser.add_argument('--num_pos', default=4, type=int,
                     help='num of pos per identity in each modality')
 parser.add_argument('--trial', default=1, type=int,
@@ -56,7 +48,7 @@ parser.add_argument('--seed', default=0, type=int,
                     metavar='t', help='random seed')
 parser.add_argument('--gpu', default='0', type=str,
                     help='gpu device ids for CUDA_VISIBLE_DEVICES')
-parser.add_argument('--mode', default='indoor', type=str, help='all or indoor for sysu')
+parser.add_argument('--mode', default='all', type=str, help='all or indoor for sysu')
 parser.add_argument('--tvsearch', action='store_true', help='whether thermal to visible search on RegDB')
 args = parser.parse_args()
 os.environ['CUDA_VISIBLE_DEVICES'] = args.gpu
@@ -82,9 +74,6 @@ cudnn.benchmark = True
 
 checkpoint_path = args.model_path
 
-if args.method =='id':
-    criterion = nn.CrossEntropyLoss()
-    criterion.to(device)
 
 print('==> Loading data..')
 # Data loading code

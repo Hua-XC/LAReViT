@@ -31,7 +31,7 @@ parser.add_argument('--dataset', default='sysu',help='dataset name: regdb or sys
 parser.add_argument('--resume', '-r', default='', type=str, help='resume from checkpoint')
 parser.add_argument('--test-only', action='store_true', help='test only')
 parser.add_argument('--save_epoch', default=20, type=int,metavar='s', help='save model every 10 epochs')
-parser.add_argument('--optim', default='admw', type=str, help='SGD,ADMW')
+parser.add_argument('--optim', default='ADMW', type=str, help='SGD,ADMW')
 parser.add_argument('--model_path', default='result/LAReViT/save_model/', type=str, help='model save path')
 parser.add_argument('--log_path', default='result/LAReViT/log/', type=str, help='log save path')
 parser.add_argument('--vis_log_path', default='result/LAReViT/log/vis_log/', type=str, help='log save path')
@@ -64,7 +64,8 @@ cfg.freeze()
 
 torch.cuda.set_device(args.gpu)
 set_seed(args.seed)
-#这边会读取log
+
+#log
 dataset = args.dataset
 if dataset == 'sysu':
     data_path='./dataset/SYSU-MM01/'
