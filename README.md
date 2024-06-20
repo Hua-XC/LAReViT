@@ -1,5 +1,5 @@
 # Local-Aware Residual Attention Vision Transformer (LAReViT)
-Pytorch code for paper "**Local-Aware Transformers with Attention Residual Connections for Visible-Infrared Person Re-Identification**
+Pytorch code for paper "**Local-Aware Transformers with Attention Residual Connections for Visible-Infrared Person Re-Identification**"
 
 ### 1. Results
 We adopt the Transformer as backbone respectively.
