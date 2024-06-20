@@ -87,12 +87,11 @@ Please cite the following paper in your publications if it is helpful:
 
 ###  6. References.
 
-[1] D. T. Nguyen, H. G. Hong, K. W. Kim, and K. R. Park. Person recognition system based on a combination of body images from visible light and thermal cameras. Sensors, 17(3):605, 2017.
+[1] Lu H, Zou X, Zhang P. Learning progressive modality-shared transformers for effective visible-infrared person re-identification[C]//Proceedings of the AAAI conference on Artificial Intelligence. 2023, 37(2): 1835-1843.
 
-[2] A. Wu, W.-s. Zheng, H.-X. Yu, S. Gong, and J. Lai. Rgb-infrared crossmodality person re-identification. In IEEE International Conference on Computer Vision (ICCV), pages 5380–5389, 2017.
+[2] He S, Luo H, Wang P, et al. Transreid: Transformer-based object re-identification[C]//Proceedings of the IEEE/CVF international conference on computer vision. 2021: 15013-15022.
 
-[3] Ye M, Shen J, Lin G, et al. Deep learning for person re-identification: A survey and outlook[J]. IEEE transactions on pattern analysis and machine intelligence, 2021, 44(6): 2872-2893.
+[3] Diko A, Avola D, Cascio M, et al. ReViT: Enhancing Vision Transformers with Attention Residual Connections for Visual Recognition[J]. arXiv preprint arXiv:2402.11301, 2024.
 
-[4] Ye M, Ruan W, Du B, et al. Channel augmented joint learning for visible-infrared recognition[C]//Proceedings of the IEEE/CVF International Conference on Computer Vision. 2021: 13567-13576.
+[4] Ni H, Li Y, Gao L, et al. Part-aware transformer for generalizable person re-identification[C]//Proceedings of the IEEE/CVF International Conference on Computer Vision. 2023: 11280-11289.
 
-[5] Zhang Y, Wang H. Diverse Embedding Expansion Network and Low-Light Cross-Modality Benchmark for Visible-Infrared Person Re-identification[C]//Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition. 2023: 2153-2162.
