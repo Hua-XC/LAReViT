@@ -196,7 +196,7 @@ class PCRT(nn.Module):
         stride_size_tuple = to_2tuple(stride_size)
         self.num_x = (img_size[1] - patch_size[1]) // stride_size_tuple[1] + 1
         self.num_y = (img_size[0] - patch_size[0]) // stride_size_tuple[0] + 1
-        print('using stride: {}, and patch number is num_y{} * num_x{}'.format(stride_size, self.num_y, self.num_x))
+
         num_patches = self.num_x * self.num_y
         self.img_size = img_size
         self.patch_size = patch_size

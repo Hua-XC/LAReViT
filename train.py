@@ -238,9 +238,16 @@ def train(epoch):
     train_loss = AverageMeter()
     id_loss = AverageMeter()
     tri_loss = AverageMeter()
+    CAL_loss = AverageMeter()
+    
+    id_lossL = AverageMeter()
+    tri_lossL = AverageMeter()
+    
+    id_losss = AverageMeter()
+    tri_losss = AverageMeter()
+    CAL_losss = AverageMeter()
     data_time = AverageMeter()
     batch_time = AverageMeter()
-    correct_tri = 0
     correct_id=0
     total = 0
 
@@ -296,8 +303,7 @@ def train(epoch):
              
             _, predicted = scores.max(1)
             correct_id += (predicted.eq(labels).sum().item())
-            correct_tri =correct_id
-            
+  
         optimizer.zero_grad()
         scaler.scale(loss).backward()
         scaler.step(optimizer)
@@ -305,8 +311,17 @@ def train(epoch):
 
         # update P
         train_loss.update(loss.item(), 2 * input10.size(0))
-        id_loss.update(loss_id.item(), 2 * input10.size(0))
-        tri_loss.update(loss_tri.item(), 2 * input10.size(0))
+        id_loss.update((loss_id/4).item(), 2 * input10.size(0))
+        tri_loss.update((loss_tri/4).item(), 2 * input10.size(0))
+        CAL_loss.update(loss_CAL.item(), 2 * input10.size(0))
+        
+        id_lossL.update(((loss_idL1+loss_idL2+loss_idL3)/4).item(), 2 * input10.size(0))
+        tri_lossL.update(((loss_triL1+loss_triL2+loss_triL3)/4).item(), 2 * input10.size(0))
+        
+        id_losss.update((loss_ids*0.5).item(), 2 * input10.size(0))
+        tri_losss.update((loss_tris*0.5).item(), 2 * input10.size(0))
+        CAL_losss.update((loss_CALs*0.5).item(), 2 * input10.size(0))    
+            
         total += labels.size(0)
 
         # measure elapsed time
@@ -317,12 +332,20 @@ def train(epoch):
                   'Time: {batch_time.val:.3f} ({batch_time.avg:.3f}) '
                   'lr:{:.8f} '
                   'Loss: {train_loss.val:.4f} ({train_loss.avg:.4f}) '
-                  'iLoss: {id_loss.val:.4f} ({id_loss.avg:.4f}) '
-                  'TLoss: {tri_loss.val:.4f} ({tri_loss.avg:.4f}) '
-                  'Accu1: {:.2f}''Accu2: {:.2f}'.format(
+                  'idLoss: {id_loss.val:.4f} ({id_loss.avg:.4f}) '
+                  'TriLoss: {tri_loss.val:.4f} ({tri_loss.avg:.4f}) '
+                  'CALoss: {CAL_loss.val:.4f} ({CAL_loss.avg:.4f}) '
+                  'idLossL: {id_lossL.val:.4f} ({id_lossL.avg:.4f}) '
+                  'TriLossL: {tri_lossL.val:.4f} ({tri_lossL.avg:.4f}) '
+                  'idLosss: {id_losss.val:.4f} ({id_losss.avg:.4f}) '
+                  'TriLosss: {tri_losss.val:.4f} ({tri_losss.avg:.4f}) '
+                  'CALosss: {CAL_losss.val:.4f} ({CAL_losss.avg:.4f}) '
+                  'Accu: {:.2f}'.format(
                 epoch, batch_idx, len(trainloader), current_lr,
-                100. * correct_id / total,100. * correct_tri / total, batch_time=batch_time,
-                train_loss=train_loss, id_loss=id_loss, tri_loss=tri_loss))
+                100. * correct_id / total, batch_time=batch_time,
+                train_loss=train_loss, id_loss=id_loss, tri_loss=tri_loss,CAL_loss=CAL_loss,
+                id_lossL=id_lossL, tri_lossL=tri_lossL,
+                id_losss=id_losss, tri_losss=tri_losss,CAL_losss=CAL_losss))
 
     #scheduler.step(epoch)
     
