@@ -71,21 +71,7 @@ python test.py --dataset 'llcm' --resume 'model_path'  --gpu 0
 ```
 
 
-
-
-### 5. Citation
-
-Most of the code of our backbone are borrowed from [AGW](https://github.com/mangye16/Cross-Modal-Re-ID-baseline) [3] and [CAJ](https://github.com/mangye16/Cross-Modal-Re-ID-baseline) [4]. Most of the code related to LLCM dataset are borrowed from [DEEN](https://github.com/mangye16/Cross-Modal-Re-ID-baseline) [5]. 
-
-Thanks a lot for the author's contribution.
-
-Please cite the following paper in your publications if it is helpful:
-
-```
-
-```
-
-###  6. References.
+###  5. References.
 
 [1] Lu H, Zou X, Zhang P. Learning progressive modality-shared transformers for effective visible-infrared person re-identification[C]//Proceedings of the AAAI conference on Artificial Intelligence. 2023, 37(2): 1835-1843.
 
