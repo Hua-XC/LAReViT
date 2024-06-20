@@ -6,7 +6,7 @@ We adopt the Transformer as backbone respectively.
 
 |   Datasets   | Backbone | Rank@1  | Rank@10| Rank@20  | mAP     |  mINP |  Model |  - |
 |:-------:|:---:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|:-------:|
-|#SYSU-MM01  | Transformer  |  76.71% |  97.33% | 99.05% | 72.95% | 60.18% |[GoogleDrive](https://drive.google.com/file/d/1OAEmkAypXOnenN6N7y9EyO0V6Yj9olbW/view?usp=drive_link)|[Baidu Netdisk](https://pan.baidu.com/s/1r2UwL95RtvFgZ_RUCSPLEw?pwd=0508)|
+|#SYSU-MM01  | Transformer  |  76.71% |  97.33% | 99.05% | 72.95% | 60.18% |[GoogleDrive](https://drive.google.com/file/d/1oR6o6TnNCCfEEdgOu08n4NmSt0DN8SoK/view?usp=sharing)|[Baidu Netdisk](https://pan.baidu.com/s/1r2UwL95RtvFgZ_RUCSPLEw?pwd=0508)|
 
 **\*The results may exhibit fluctuations due to random splitting, and further improvement can be achieved by fine-tuning the hyperparameters.**
 
