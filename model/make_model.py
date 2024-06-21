@@ -9,8 +9,8 @@ import torch.nn as nn
 class PositionalChannelReconstructionModule(nn.Module):
     def __init__(self, in_channels, reduction_ratio=4):
         super(PositionalChannelReconstructionModule, self).__init__()
-        self.avg_poolA = nn.AdaptiveAvgPool1d(1)
-        self.avg_poolM = nn.AdaptiveMaxPool1d(1)
+        self.avg_pool = nn.AdaptiveAvgPool1d(1)
+        self.max_pool = nn.AdaptiveMaxPool1d(1)
         self.fc = nn.Sequential(
             nn.Linear(in_channels, in_channels // reduction_ratio),
             nn.ReLU(inplace=True),
@@ -20,7 +20,7 @@ class PositionalChannelReconstructionModule(nn.Module):
 
     def forward(self, x):
         batch_size, num_channels, _ = x.size()
-        y = (1*self.avg_poolA(x)+0*self.avg_poolM(x)).view(batch_size, num_channels)
+        y = (1*self.avg_pool(x)+0*self.max_pool(x)).view(batch_size, num_channels)
         y = self.fc(y).view(batch_size, num_channels, 1)
         return x * y.expand_as(x)
  
