@@ -70,8 +70,24 @@ python test.py --dataset 'regdb' --resume 'model_path'  --tvsearch True --gpu 0
 python test.py --dataset 'llcm' --resume 'model_path'  --gpu 0
 ```
 
+### 5. Citation
 
-###  5. References.
+Most of the code of our backbone are borrowed from [AGW](https://github.com/mangye16/Cross-Modal-Re-ID-baseline) [3] and [CAJ](https://github.com/mangye16/Cross-Modal-Re-ID-baseline) [4]. Most of the code related to LLCM dataset are borrowed from [DEEN](https://github.com/mangye16/Cross-Modal-Re-ID-baseline) [5]. 
+
+Thanks a lot for the author's contribution.
+
+Please cite the following paper in your publications if it is helpful:
+
+```
+Xuecheng Hua, Ke Cheng,Gege Zhu, Hu Lu, Yuanquan Wang, Shitong Wang,
+Local-Aware Transformers with Attention Residual Connections for Visible-Infrared Person Re-Identification,
+ACM Transactions on Multimedia Computing, Communications, and Applications,
+2025,
+
+**https://doi.org/10.1016/j.patcog.2024.111090.**
+```
+
+###  6. References.
 
 [1] Lu H, Zou X, Zhang P. Learning progressive modality-shared transformers for effective visible-infrared person re-identification[C]//Proceedings of the AAAI conference on Artificial Intelligence. 2023, 37(2): 1835-1843.
 
